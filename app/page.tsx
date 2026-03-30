@@ -1,7 +1,8 @@
 import GrainCard from "@/components/GrainCard";
 import WeatherCard from "@/components/WeatherCard";
 import SprayCard from "@/components/SprayCard";
-import { fetchCurrentWeather } from "@/lib/weather";
+import ForecastCard from "@/components/ForecastCard";
+import { fetchCurrentWeather, fetchDailyForecast } from "@/lib/weather";
 import { fetchRainfall } from "@/lib/rainfall";
 import { calculateSprayDecision } from "@/lib/spray";
 import { fetchGrainPrices } from "@/lib/grain";
@@ -13,10 +14,10 @@ type WeatherData = Awaited<ReturnType<typeof fetchCurrentWeather>>;
 
 async function getWeatherData(weather: WeatherData) {
   const rainfall = await fetchRainfall();
-  
+
   // Only error if the weather API itself failed, not if optional rainfall is unconfigured
   const hasError = weather.error;
-  
+
   return {
     locationLabel: config.weather.locationLabel,
     rain1d: rainfall.rain1d,
@@ -43,7 +44,7 @@ function getSprayData(weather: WeatherData) {
       updatedAt: new Date().toISOString(),
     };
   }
-  
+
   return calculateSprayDecision({
     windMph: weather.windMph,
     gustMph: weather.gustMph,
@@ -53,11 +54,12 @@ function getSprayData(weather: WeatherData) {
 }
 
 export default async function Home() {
-  const [weather, grainData] = await Promise.all([
+  const [weather, grainData, forecast] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
+    fetchDailyForecast(10),
   ]);
-  
+
   const [weatherData, sprayData] = await Promise.all([
     getWeatherData(weather),
     Promise.resolve(getSprayData(weather)),
@@ -70,6 +72,7 @@ export default async function Home() {
       <GrainCard data={grainData} />
       <WeatherCard data={weatherData} />
       <SprayCard data={sprayData} />
+      <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       {hasAnyError && (
         <p className="text-center text-xs text-red-500">
           ⚠️ API connections down — weather or spray data unavailable

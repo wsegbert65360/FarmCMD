@@ -26,6 +26,22 @@ export interface WeatherData {
   updatedAt: string;
 }
 
+export interface ForecastDay {
+  date: string;           // YYYY-MM-DD
+  dayLabel: string;       // "Mon", "Tue", etc.
+  highF: number;          // High temp in °F
+  lowF: number;           // Low temp in °F
+  rainChance: number;     // Max precipitation probability 0-100
+  rainMm: number;         // Total precipitation in mm
+  windMph: number;        // Max wind speed in mph
+  weatherCode: number;    // WMO weather code
+}
+
+export interface ForecastData {
+  days: ForecastDay[];
+  updatedAt: string;
+}
+
 export interface SprayThresholds {
   maxWindMph: number;
   maxGustMph: number;
