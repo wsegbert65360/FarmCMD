@@ -1,4 +1,4 @@
-const CACHE_NAME = "farm-command-v1";
+const CACHE_NAME = "farm-command-v1.4.0";
 const OFFLINE_URL = "/";
 
 // Install: pre-cache the shell

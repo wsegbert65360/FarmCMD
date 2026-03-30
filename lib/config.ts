@@ -7,6 +7,8 @@ function parseValidatedFloat(value: string | undefined, fallback: number, min: n
   return parsed;
 }
 
+export const VERSION = "1.4.0";
+
 export const config = {
   weather: {
     lat: parseValidatedFloat(process.env.WEATHER_LAT, 38.4626783, -90, 90),
