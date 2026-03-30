@@ -14,7 +14,8 @@ type WeatherData = Awaited<ReturnType<typeof fetchCurrentWeather>>;
 async function getWeatherData(weather: WeatherData) {
   const rainfall = await fetchRainfall();
   
-  const hasError = weather.error || rainfall.error;
+  // Only error if the weather API itself failed, not if optional rainfall is unconfigured
+  const hasError = weather.error;
   
   return {
     locationLabel: config.weather.locationLabel,
@@ -71,7 +72,7 @@ export default async function Home() {
       <SprayCard data={sprayData} />
       {hasAnyError && (
         <p className="text-center text-xs text-red-500">
-          Check API connections
+          ⚠️ API connections down — weather or spray data unavailable
         </p>
       )}
     </main>

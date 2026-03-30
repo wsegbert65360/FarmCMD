@@ -2,108 +2,74 @@ import { config } from "./config";
 import { GrainData } from "./types";
 import { isValidNumber, isValidObject } from "./validation";
 
-const COMMODITIES_API_BASE = "https://commodities-api.com/api/latest";
-const METRIC_TON_TO_BUSHEL = {
-  corn: 39.368,
-  soybeans: 36.744,
+const YAHOO_FINANCE_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+
+// Cents per bushel — Yahoo returns corn in cents/bushel, soybeans in cents/bushel
+const SYMBOLS = {
+  corn: "ZC=F",     // CBOT Corn Futures
+  soybeans: "ZS=F", // CBOT Soybean Futures
 } as const;
 
-async function fetchCommodityPrice(symbol: string): Promise<{
+async function fetchFuturesPrice(symbol: string): Promise<{
   price: number;
-  change: number;
-  changePercent: number;
-  reportDate: string;
+  previousClose: number;
+  dayHigh: number;
+  dayLow: number;
 } | null> {
-  const apiKey = config.grain.commoditiesApiKey;
-  if (!apiKey) {
-    return null;
-  }
-
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(
-      `${COMMODITIES_API_BASE}?access_key=${apiKey}&base=USD&symbols=${symbol}`,
-      {
-        cache: "no-store",
-        signal: controller.signal,
-      }
-    );
+    const url = `${YAHOO_FINANCE_BASE}/${symbol}?interval=1d&range=2d`;
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Farm-Command/1.0" },
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.error(`Yahoo Finance returned ${response.status} for ${symbol}`);
       return null;
     }
 
-    const rawData = await response.json();
-    
-    if (!isValidObject(rawData) || !isValidObject(rawData.data) || !isValidObject(rawData.data.rates)) {
+    const rawData: Record<string, unknown> = await response.json();
+
+    const chart = rawData.chart as Record<string, unknown> | undefined;
+    const results = chart?.result as Record<string, unknown>[] | undefined;
+    if (!isValidObject(rawData) || !results?.[0] || !isValidObject(results[0].meta)) {
+      console.error(`Invalid Yahoo Finance response for ${symbol}`);
       return null;
     }
-    
-    const data = rawData as { data: { rates: Record<string, number> } };
-    const pricePerMetricTon = data.data.rates[symbol];
-    
-    if (!isValidNumber(pricePerMetricTon)) {
+
+    const meta = results[0].meta as Record<string, unknown>;
+    const price = meta.regularMarketPrice;
+    const previousClose = meta.chartPreviousClose;
+
+    if (!isValidNumber(price) || !isValidNumber(previousClose)) {
+      console.error(`Missing price data for ${symbol}`);
       return null;
-    }
-    const conversionFactor = METRIC_TON_TO_BUSHEL[symbol as keyof typeof METRIC_TON_TO_BUSHEL];
-    if (!conversionFactor) {
-      return null;
-    }
-    const bushelPrice = pricePerMetricTon / conversionFactor;
-
-    const yesterdayDate = getYesterdayDate();
-    const yesterdayController = new AbortController();
-    const yesterdayTimeoutId = setTimeout(() => yesterdayController.abort(), 10000);
-    const yesterdayResponse = await fetch(
-      `${COMMODITIES_API_BASE}?access_key=${apiKey}&base=USD&symbols=${symbol}&date=${yesterdayDate}`,
-      {
-        cache: "no-store",
-        signal: yesterdayController.signal,
-      }
-    );
-    clearTimeout(yesterdayTimeoutId);
-
-    let change = 0;
-    let changePercent = 0;
-
-    if (yesterdayResponse.ok) {
-      const yesterdayData = await yesterdayResponse.json();
-      if (yesterdayData?.data?.rates?.[symbol]) {
-        const yesterdayPricePerTon = yesterdayData.data.rates[symbol];
-        const yesterdayPrice = yesterdayPricePerTon / conversionFactor;
-        change = bushelPrice - yesterdayPrice;
-        changePercent = yesterdayPrice > 0 ? (change / yesterdayPrice) * 100 : 0;
-      }
     }
 
     return {
-      price: Math.round(bushelPrice * 100) / 100,
-      change: Math.round(change * 100) / 100,
-      changePercent: Math.round(changePercent * 100) / 100,
-      reportDate: new Date().toISOString(),
+      price: price as number,
+      previousClose: previousClose as number,
+      dayHigh: isValidNumber(meta.regularMarketDayHigh) ? (meta.regularMarketDayHigh as number) : (price as number),
+      dayLow: isValidNumber(meta.regularMarketDayLow) ? (meta.regularMarketDayLow as number) : (price as number),
     };
   } catch (error) {
-    console.error("Grain API error:", error);
+    console.error(`Error fetching ${symbol}:`, error);
     return null;
   }
-}
-
-function getYesterdayDate(): string {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split("T")[0];
 }
 
 export async function fetchGrainPrices(): Promise<GrainData> {
   const { priceDropThreshold } = config.grain;
 
   const [cornData, soybeansData] = await Promise.all([
-    fetchCommodityPrice("CORN"),
-    fetchCommodityPrice("SOYBEANS"),
+    fetchFuturesPrice(SYMBOLS.corn),
+    fetchFuturesPrice(SYMBOLS.soybeans),
   ]);
 
   if (!cornData || !soybeansData) {
@@ -113,52 +79,66 @@ export async function fetchGrainPrices(): Promise<GrainData> {
         change: 0,
         changePercent: 0,
         recommendation: "HOLD",
-        reason: "API unavailable - check connection",
+        reason: "API unavailable — check connection",
       },
       soybeans: {
         price: 0,
         change: 0,
         changePercent: 0,
         recommendation: "HOLD",
-        reason: "API unavailable - check connection",
+        reason: "API unavailable — check connection",
       },
       updatedAt: new Date().toISOString(),
     };
   }
 
-  const reportDate = cornData.reportDate;
+  // Corn: Yahoo returns cents per bushel — convert to $/bushel
+  const cornPrice = cornData.price / 100;
+  const cornPrev = cornData.previousClose / 100;
+  const cornChange = Math.round((cornPrice - cornPrev) * 100) / 100;
+  const cornChangePercent = cornPrev > 0
+    ? Math.round((cornChange / cornPrev) * 10000) / 100
+    : 0;
 
-  const cornRecommendation: "SELL" | "HOLD" = cornData.change <= priceDropThreshold ? "SELL" : "HOLD";
+  const cornRecommendation: "SELL" | "HOLD" = cornChange <= priceDropThreshold ? "SELL" : "HOLD";
   const cornReason =
     cornRecommendation === "SELL"
-      ? `Price fell by ${Math.abs(cornData.change).toFixed(2)} today`
-      : cornData.change > 0
+      ? `Price fell by ${Math.abs(cornChange).toFixed(2)} today`
+      : cornChange > 0
       ? "Price improved today"
       : "Price stable today";
 
-  const soybeansRecommendation: "SELL" | "HOLD" = soybeansData.change <= priceDropThreshold ? "SELL" : "HOLD";
-  const soybeansReason =
-    soybeansRecommendation === "SELL"
-      ? `Price fell by ${Math.abs(soybeansData.change).toFixed(2)} today`
-      : soybeansData.change > 0
+  // Soybeans: Yahoo returns cents per bushel — convert to $/bushel
+  const soyPrice = soybeansData.price / 100;
+  const soyPrev = soybeansData.previousClose / 100;
+  const soyChange = Math.round((soyPrice - soyPrev) * 100) / 100;
+  const soyChangePercent = soyPrev > 0
+    ? Math.round((soyChange / soyPrev) * 10000) / 100
+    : 0;
+
+  const soyRecommendation: "SELL" | "HOLD" = soyChange <= priceDropThreshold ? "SELL" : "HOLD";
+  const soyReason =
+    soyRecommendation === "SELL"
+      ? `Price fell by ${Math.abs(soyChange).toFixed(2)} today`
+      : soyChange > 0
       ? "Price improved today"
       : "Price stable today";
 
   return {
     corn: {
-      price: cornData.price,
-      change: cornData.change,
-      changePercent: cornData.changePercent,
+      price: cornPrice,
+      change: cornChange,
+      changePercent: cornChangePercent,
       recommendation: cornRecommendation,
       reason: cornReason,
     },
     soybeans: {
-      price: soybeansData.price,
-      change: soybeansData.change,
-      changePercent: soybeansData.changePercent,
-      recommendation: soybeansRecommendation,
-      reason: soybeansReason,
+      price: soyPrice,
+      change: soyChange,
+      changePercent: soyChangePercent,
+      recommendation: soyRecommendation,
+      reason: soyReason,
     },
-    updatedAt: reportDate,
+    updatedAt: new Date().toISOString(),
   };
 }

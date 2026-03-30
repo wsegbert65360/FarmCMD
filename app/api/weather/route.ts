@@ -9,7 +9,8 @@ export async function GET() {
   try {
     const [weather, rainfall] = await Promise.all([fetchCurrentWeather(), fetchRainfall()]);
 
-    if (weather.error || rainfall.error) {
+    // Only error if the weather API itself fails, not if optional rainfall is unconfigured
+    if (weather.error) {
       return NextResponse.json(
         {
           error: "Weather data unavailable",

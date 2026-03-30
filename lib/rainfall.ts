@@ -11,11 +11,11 @@ export async function fetchRainfall(): Promise<{
   const { timezone } = config.weather;
 
   if (!fieldId) {
+    // Rainfall field tracking is optional — return nulls without an error
     return {
       rain1d: null,
       rain3d: null,
       rain7d: null,
-      error: "FIELD_ID not configured",
     };
   }
 
