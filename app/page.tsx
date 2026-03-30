@@ -3,6 +3,7 @@ import WeatherCard from "@/components/WeatherCard";
 import SprayCard from "@/components/SprayCard";
 import ForecastCard from "@/components/ForecastCard";
 import NewsCard from "@/components/NewsCard";
+import UpdateButton from "@/components/UpdateButton";
 import { fetchCurrentWeather, fetchDailyForecast } from "@/lib/weather";
 import { fetchRainfall } from "@/lib/rainfall";
 import { calculateSprayDecision } from "@/lib/spray";
@@ -82,6 +83,9 @@ export default async function Home() {
           ⚠️ API connections down — weather or spray data unavailable
         </p>
       )}
+      <div className="pt-3 pb-4">
+        <UpdateButton />
+      </div>
     </main>
   );
 }
