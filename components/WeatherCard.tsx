@@ -31,7 +31,7 @@ export default function WeatherCard({ data }: WeatherCardProps) {
       </div>
       <div className="grid grid-cols-3 gap-1 text-sm">
         <WeatherRow label="Wind" value={data.windMph !== null ? `${data.windMph} mph` : "--"} />
-        <WeatherRow label="Gusts" value={data.gustMph ? `${data.gustMph} mph` : "--"} />
+        <WeatherRow label="Gusts" value={data.gustMph !== null ? `${data.gustMph} mph` : "--"} />
         <WeatherRow
           label="Rain"
           value={data.isRainingNow ? "Yes" : "No"}

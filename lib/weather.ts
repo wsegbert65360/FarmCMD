@@ -51,17 +51,12 @@ export async function fetchCurrentWeather(): Promise<{
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m&hourly=precipitation_probability,precipitation,wind_speed_10m`;
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Farm-Command/1.0",
       },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(10000),
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return { tempF: null, windMph: null, gustMph: null, isRainingNow: null, rainPredicted: null, error: "Weather API unavailable" };
@@ -84,10 +79,9 @@ export async function fetchCurrentWeather(): Promise<{
       ? toMph(current.wind_speed_10m)
       : null;
 
-    let gustMph: number | null = null;
-    if (current.wind_gusts_10m !== null) {
-      gustMph = toMph(current.wind_gusts_10m);
-    }
+    const gustMph = current.wind_gusts_10m !== null
+      ? toMph(current.wind_gusts_10m)
+      : null;
 
     const isRainingNow = current.precipitation > 0;
 
@@ -115,15 +109,10 @@ export async function fetchDailyForecast(days = 10): Promise<{
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,weathercode&timezone=${encodeURIComponent(timezone)}&forecast_days=${days}`;
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const response = await fetch(url, {
       headers: { "User-Agent": "Farm-Command/1.0" },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(10000),
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return { days: [], error: "Forecast API unavailable" };

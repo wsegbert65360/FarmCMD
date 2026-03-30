@@ -17,17 +17,12 @@ async function fetchFuturesPrice(symbol: string): Promise<{
   dayLow: number;
 } | null> {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const url = `${YAHOO_FINANCE_BASE}/${symbol}?interval=1d&range=2d`;
     const response = await fetch(url, {
       headers: { "User-Agent": "Farm-Command/1.0" },
       cache: "no-store",
-      signal: controller.signal,
+      signal: AbortSignal.timeout(10000),
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`Yahoo Finance returned ${response.status} for ${symbol}`);

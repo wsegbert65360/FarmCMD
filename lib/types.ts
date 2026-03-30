@@ -60,7 +60,6 @@ export interface NewsArticle {
   title: string;
   url: string;
   source: string;
-  snippet: string;
 }
 
 export interface NewsData {

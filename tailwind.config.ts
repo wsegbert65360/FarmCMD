@@ -7,14 +7,7 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        go: "#22c55e",
-        wait: "#ef4444",
-        sell: "#f97316",
-        hold: "#22c55e",
-      },
-    },
+    extend: {},
   },
   plugins: [],
 };

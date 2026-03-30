@@ -96,17 +96,12 @@ export async function fetchFarmNews(): Promise<NewsData> {
   try {
     const url = `https://news.google.com/rss/search?q=${SEARCH_TERMS}&hl=en-US&gl=US&ceid=US:en`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Farm-Command/1.0",
       },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(12000),
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`Google News RSS returned ${response.status}`);
@@ -139,7 +134,6 @@ export async function fetchFarmNews(): Promise<NewsData> {
       title: item.title,
       url: item.link,
       source: item.source,
-      snippet: "",
     }));
 
     return {

@@ -47,7 +47,7 @@ export default function ForecastCard({ days, updatedAt }: ForecastCardProps) {
               </span>
             </div>
             {day.rainMm > 0 && (
-              <span className="text-[10px] text-blue-400 mt-0.5">{day.rainMm}&quot;</span>
+              <span className="text-[10px] text-blue-400 mt-0.5">{(day.rainMm / 25.4).toFixed(2)}&quot;</span>
             )}
             <span className="text-[10px] text-slate-400 mt-1">
               {day.windMph} mph

@@ -28,7 +28,7 @@ export async function GET() {
       windMph: weather.windMph,
       gustMph: weather.gustMph,
       isRainingNow: weather.isRainingNow ?? false,
-      rainPredicted: weather.rainPredicted,
+      rainPredicted: weather.rainPredicted ?? false,
     });
     return NextResponse.json(data);
   } catch (error) {
