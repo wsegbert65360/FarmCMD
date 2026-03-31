@@ -2,11 +2,13 @@ import { config } from "./config";
 import { isValidObject } from "./validation";
 
 export interface DewPointData {
-  dewPointF: number | null;
-  humidityPct: number | null;
   tempF: number | null;
-  /** Comfort/advisory message based on dew point */
-  advisory: string;
+  dewPointF: number | null;
+  humidity: number | null;
+  /** Comfort level based on dew point */
+  comfort: "Comfortable" | "Slightly Humid" | "Humid" | "Muggy" | "Oppressive" | "";
+  /** Spraying advisory based on humidity */
+  sprayNote: string;
   error?: string;
   updatedAt: string;
 }
@@ -15,18 +17,25 @@ function toF(c: number): number {
   return Math.round((c * 9) / 5 + 32);
 }
 
-function getAdvisory(dewPointF: number): string {
-  if (dewPointF < 55) return "Comfortable — spray conditions good";
-  if (dewPointF < 60) return "Slightly humid — monitor crops";
-  if (dewPointF < 65) return "Humid — disease pressure increasing";
-  if (dewPointF < 70) return "Very humid — high disease risk";
-  return "Oppressive — avoid spraying, high stress";
+function getComfortLevel(dewPointF: number): DewPointData["comfort"] {
+  if (dewPointF < 55) return "Comfortable";
+  if (dewPointF < 60) return "Slightly Humid";
+  if (dewPointF < 65) return "Humid";
+  if (dewPointF < 70) return "Muggy";
+  return "Oppressive";
+}
+
+function getSprayNote(humidity: number): string {
+  if (humidity < 40) return "Low drift risk — good spray window";
+  if (humidity < 60) return "Fair conditions for spraying";
+  if (humidity < 80) return "High humidity — watch for drift";
+  return "Very humid — avoid spraying";
 }
 
 export async function fetchDewPoint(): Promise<DewPointData> {
   const { lat, lon } = config.weather;
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m&timezone=${encodeURIComponent(config.weather.timezone)}&forecast_days=1`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dew_point_2m,relative_humidity_2m`;
 
   try {
     const response = await fetch(url, {
@@ -35,30 +44,31 @@ export async function fetchDewPoint(): Promise<DewPointData> {
     });
 
     if (!response.ok) {
-      return { dewPointF: null, humidityPct: null, tempF: null, advisory: "", error: "API unavailable", updatedAt: new Date().toISOString() };
+      return { tempF: null, dewPointF: null, humidity: null, comfort: "", sprayNote: "", error: "API unavailable", updatedAt: new Date().toISOString() };
     }
 
-    const rawData: Record<string, unknown> = await response.json();
+    const rawData = await response.json();
 
     if (!isValidObject(rawData) || !isValidObject(rawData.current)) {
-      return { dewPointF: null, humidityPct: null, tempF: null, advisory: "", error: "Invalid response", updatedAt: new Date().toISOString() };
+      return { tempF: null, dewPointF: null, humidity: null, comfort: "", sprayNote: "", error: "Invalid response", updatedAt: new Date().toISOString() };
     }
 
-    const current = rawData.current as Record<string, unknown>;
+    const current = rawData.current as Record<string, number>;
 
-    const tempC = current.temperature_2m;
-    const humidity = current.relative_humidity_2m;
-    const dewPointC = current.dew_point_2m;
+    const tempF = isValidNumber(current.temperature_2m) ? toF(current.temperature_2m) : null;
+    const dewPointF = isValidNumber(current.dew_point_2m) ? toF(current.dew_point_2m) : null;
+    const humidity = isValidNumber(current.relative_humidity_2m) ? current.relative_humidity_2m : null;
 
-    const tempF = typeof tempC === "number" ? toF(tempC) : null;
-    const humidityPct = typeof humidity === "number" ? Math.round(humidity) : null;
-    const dewPointF = typeof dewPointC === "number" ? toF(dewPointC) : null;
+    const comfort = dewPointF !== null ? getComfortLevel(dewPointF) : "";
+    const sprayNote = humidity !== null ? getSprayNote(humidity) : "";
 
-    const advisory = dewPointF !== null ? getAdvisory(dewPointF) : "";
-
-    return { dewPointF, humidityPct, tempF, advisory, updatedAt: new Date().toISOString() };
+    return { tempF, dewPointF, humidity, comfort, sprayNote, updatedAt: new Date().toISOString() };
   } catch (e) {
     console.error("Dew point API error:", e);
-    return { dewPointF: null, humidityPct: null, tempF: null, advisory: "", error: "API unavailable", updatedAt: new Date().toISOString() };
+    return { tempF: null, dewPointF: null, humidity: null, comfort: "", sprayNote: "", error: "API unavailable", updatedAt: new Date().toISOString() };
   }
+}
+
+function isValidNumber(value: unknown): value is number {
+  return typeof value === "number" && !isNaN(value);
 }

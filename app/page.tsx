@@ -131,10 +131,11 @@ export default async function Home() {
       {/* END FEATURE: SoilTemp */}
       {/* FEATURE: DewPoint — delete this block to remove */}
       <DewPointCard
-        dewPointF={dewPointData.dewPointF}
-        humidityPct={dewPointData.humidityPct}
         tempF={dewPointData.tempF}
-        advisory={dewPointData.advisory}
+        dewPointF={dewPointData.dewPointF}
+        humidity={dewPointData.humidity}
+        comfort={dewPointData.comfort}
+        sprayNote={dewPointData.sprayNote}
         error={dewPointData.error}
       />
       {/* END FEATURE: DewPoint */}

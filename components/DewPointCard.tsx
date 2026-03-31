@@ -1,39 +1,36 @@
-import { config } from "@/lib/config";
-
 interface DewPointCardProps {
-  dewPointF: number | null;
-  humidityPct: number | null;
   tempF: number | null;
-  advisory: string;
+  dewPointF: number | null;
+  humidity: number | null;
+  comfort: string;
+  sprayNote: string;
   error?: string;
 }
 
-function dewPointColor(dewPointF: number | null): string {
-  if (dewPointF === null) return "text-slate-400";
-  if (dewPointF < 55) return "text-green-600";
-  if (dewPointF < 65) return "text-yellow-600";
-  return "text-red-600";
+function comfortColor(comfort: string): string {
+  switch (comfort) {
+    case "Comfortable": return "text-green-600";
+    case "Slightly Humid": return "text-lime-600";
+    case "Humid": return "text-yellow-600";
+    case "Muggy": return "text-orange-600";
+    case "Oppressive": return "text-red-600";
+    default: return "text-slate-400";
+  }
 }
 
-function humidityColor(humidityPct: number | null): string {
-  if (humidityPct === null) return "text-slate-400";
-  if (humidityPct < 50) return "text-green-600";
-  if (humidityPct < 70) return "text-yellow-600";
-  return "text-red-600";
+function humidityColor(humidity: number | null): string {
+  if (humidity === null) return "bg-slate-50 text-slate-400";
+  if (humidity < 40) return "bg-green-50 text-green-700";
+  if (humidity < 60) return "bg-lime-50 text-lime-700";
+  if (humidity < 80) return "bg-yellow-50 text-yellow-700";
+  return "bg-red-50 text-red-700";
 }
 
-function dewPointBg(dewPointF: number | null): string {
-  if (dewPointF === null) return "bg-slate-50";
-  if (dewPointF < 55) return "bg-green-50";
-  if (dewPointF < 65) return "bg-yellow-50";
-  return "bg-red-50";
-}
-
-export default function DewPointCard({ dewPointF, humidityPct, tempF, advisory, error }: DewPointCardProps) {
+export default function DewPointCard({ tempF, dewPointF, humidity, comfort, sprayNote, error }: DewPointCardProps) {
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
-        <h2 className="text-base font-semibold text-slate-900 mb-2">Dew Point</h2>
+        <h2 className="text-base font-semibold text-slate-900 mb-2">Humidity</h2>
         <p className="text-sm text-slate-400 text-center py-2">{error}</p>
       </div>
     );
@@ -42,31 +39,46 @@ export default function DewPointCard({ dewPointF, humidityPct, tempF, advisory, 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-base font-semibold text-slate-900">Dew Point</h2>
+        <h2 className="text-base font-semibold text-slate-900">Humidity</h2>
       </div>
+
       <div className="grid grid-cols-3 gap-2 mb-2">
-        <div className={`text-center rounded-lg p-2 ${dewPointBg(dewPointF)}`}>
-          <p className="text-[10px] text-slate-500">DEW PT</p>
-          <p className={`text-xl font-bold leading-tight ${dewPointColor(dewPointF)}`}>
-            {dewPointF !== null ? `${dewPointF}°` : "--"}
-          </p>
-        </div>
-        <div className="text-center bg-blue-50 rounded-lg p-2">
-          <p className="text-[10px] text-slate-500">HUMIDITY</p>
-          <p className={`text-xl font-bold leading-tight ${humidityColor(humidityPct)}`}>
-            {humidityPct !== null ? `${humidityPct}%` : "--"}
-          </p>
-        </div>
-        <div className="text-center bg-slate-50 rounded-lg p-2">
-          <p className="text-[10px] text-slate-500">TEMP</p>
-          <p className="text-xl font-bold leading-tight text-slate-900">
+        {/* Air temp */}
+        <div className="bg-blue-50 rounded-lg p-2 text-center">
+          <p className="text-[10px] text-slate-500">AIR</p>
+          <p className="text-lg font-bold text-blue-600">
             {tempF !== null ? `${tempF}°` : "--"}
           </p>
         </div>
+
+        {/* Dew point */}
+        <div className="bg-cyan-50 rounded-lg p-2 text-center">
+          <p className="text-[10px] text-slate-500">DEW PT</p>
+          <p className="text-lg font-bold text-cyan-600">
+            {dewPointF !== null ? `${dewPointF}°` : "--"}
+          </p>
+        </div>
+
+        {/* Relative humidity */}
+        <div className={`rounded-lg p-2 text-center ${humidityColor(humidity)}`}>
+          <p className="text-[10px] opacity-70">RH</p>
+          <p className="text-lg font-bold">
+            {humidity !== null ? `${humidity}%` : "--"}
+          </p>
+        </div>
       </div>
-      <div className="bg-slate-50 rounded-lg px-2.5 py-1.5">
-        <p className="text-xs text-slate-600">{advisory}</p>
-      </div>
+
+      {/* Comfort level */}
+      {comfort && (
+        <div className="flex items-center justify-between px-1">
+          <span className={`text-xs font-medium ${comfortColor(comfort)}`}>
+            {comfort}
+          </span>
+          <span className="text-[10px] text-slate-400">
+            {sprayNote}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
