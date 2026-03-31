@@ -25,6 +25,9 @@ import { fetchDewPoint } from "@/lib/dew-point";
 // FEATURE: GrowingDegreeDays — delete this import + render block to remove
 import GrowingDegreeDaysCard from "@/components/GrowingDegreeDaysCard";
 import { fetchGDD } from "@/lib/growing-degree-days";
+// FEATURE: FrostAlert — delete this import + render block to remove
+import FrostAlertCard from "@/components/FrostAlertCard";
+import { fetchFrostAlert } from "@/lib/frost-alert";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -78,7 +81,8 @@ export default async function Home() {
   // FEATURE: SoilTemp — delete this fetchSoilTemp from Promise.all to remove
   // FEATURE: DewPoint — delete this fetchDewPoint from Promise.all to remove
   // FEATURE: GrowingDegreeDays — delete this fetchGDD from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData] = await Promise.all([
+  // FEATURE: FrostAlert — delete this fetchFrostAlert from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData, frostData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
@@ -88,6 +92,7 @@ export default async function Home() {
     fetchSoilTemp(),
     fetchDewPoint(),
     fetchGDD(),
+    fetchFrostAlert(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -149,6 +154,14 @@ export default async function Home() {
         error={gddData.error}
       />
       {/* END FEATURE: GrowingDegreeDays */}
+      {/* FEATURE: FrostAlert — delete this block to remove */}
+      <FrostAlertCard
+        days={frostData.days}
+        alertLevel={frostData.alertLevel}
+        summary={frostData.summary}
+        error={frostData.error}
+      />
+      {/* END FEATURE: FrostAlert */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
