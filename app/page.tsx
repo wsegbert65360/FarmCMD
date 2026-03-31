@@ -40,6 +40,9 @@ import { fetchDryingConditions } from "@/lib/drying-conditions";
 // FEATURE: RainTimeline — delete this import + render block to remove
 import RainTimelineCard from "@/components/RainTimelineCard";
 import { fetchRainTimeline } from "@/lib/rain-timeline";
+// FEATURE: FieldTrafficability — delete this import + render block to remove
+import FieldTrafficabilityCard from "@/components/FieldTrafficabilityCard";
+import { fetchFieldTrafficability } from "@/lib/field-trafficability";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -98,7 +101,8 @@ export default async function Home() {
   // FEATURE: SprayDayPlanner — delete this fetchSprayDayPlanner from Promise.all to remove
   // FEATURE: DryingConditions — delete this fetchDryingConditions from Promise.all to remove
   // FEATURE: RainTimeline — delete this fetchRainTimeline from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData, frostData, barometerData, sprayPlannerData, dryingData, rainTimelineData] = await Promise.all([
+  // FEATURE: FieldTrafficability — delete this fetchFieldTrafficability from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData, frostData, barometerData, sprayPlannerData, dryingData, rainTimelineData, trafficData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
@@ -113,6 +117,7 @@ fetchGDD(),
     fetchSprayDayPlanner(),
  fetchDryingConditions(),
  fetchRainTimeline(),
+ fetchFieldTrafficability(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -222,6 +227,19 @@ fetchGDD(),
         error={rainTimelineData.error}
       />
       {/* END FEATURE: RainTimeline */}
+      {/* FEATURE: FieldTrafficability — delete this block to remove */}
+      <FieldTrafficabilityCard
+        rating={trafficData.rating}
+        reason={trafficData.reason}
+        totalRain7d={trafficData.totalRain7d}
+        yesterdayRainIn={trafficData.yesterdayRainIn}
+        tempF={trafficData.tempF}
+        groundFrozen={trafficData.groundFrozen}
+        history={trafficData.history}
+        rainExpected={trafficData.rainExpected}
+        error={trafficData.error}
+      />
+      {/* END FEATURE: FieldTrafficability */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
