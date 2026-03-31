@@ -22,6 +22,9 @@ import { fetchSoilTemp } from "@/lib/soil-temp";
 // FEATURE: DewPoint — delete this import + render block to remove
 import DewPointCard from "@/components/DewPointCard";
 import { fetchDewPoint } from "@/lib/dew-point";
+// FEATURE: GrowingDegreeDays — delete this import + render block to remove
+import GrowingDegreeDaysCard from "@/components/GrowingDegreeDaysCard";
+import { fetchGDD } from "@/lib/growing-degree-days";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -74,7 +77,8 @@ export default async function Home() {
   // FEATURE: Radar — delete this fetchRadar from Promise.all to remove
   // FEATURE: SoilTemp — delete this fetchSoilTemp from Promise.all to remove
   // FEATURE: DewPoint — delete this fetchDewPoint from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData] = await Promise.all([
+  // FEATURE: GrowingDegreeDays — delete this fetchGDD from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
@@ -83,6 +87,7 @@ export default async function Home() {
     fetchRadar(),
     fetchSoilTemp(),
     fetchDewPoint(),
+    fetchGDD(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -133,6 +138,16 @@ export default async function Home() {
         error={dewPointData.error}
       />
       {/* END FEATURE: DewPoint */}
+      {/* FEATURE: GrowingDegreeDays — delete this block to remove */}
+      <GrowingDegreeDaysCard
+        todayGDD={gddData.todayGDD}
+        seasonGDD={gddData.seasonGDD}
+        soySeasonGDD={gddData.soySeasonGDD}
+        weekGDD={gddData.weekGDD}
+        dailyGDD={gddData.dailyGDD}
+        error={gddData.error}
+      />
+      {/* END FEATURE: GrowingDegreeDays */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
