@@ -16,6 +16,9 @@ import { fetchSunriseSunset } from "@/lib/sunrise-sunset";
 // FEATURE: Radar — delete this import + render block to remove
 import RadarCard from "@/components/RadarCard";
 import { fetchRadar } from "@/lib/radar";
+// FEATURE: SoilTemp — delete this import + render block to remove
+import SoilTempCard from "@/components/SoilTempCard";
+import { fetchSoilTemp } from "@/lib/soil-temp";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -66,13 +69,15 @@ function getSprayData(weather: WeatherData) {
 export default async function Home() {
   // FEATURE: SunriseSunset — delete this fetchSunriseSunset from Promise.all to remove
   // FEATURE: Radar — delete this fetchRadar from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData] = await Promise.all([
+  // FEATURE: SoilTemp — delete this fetchSoilTemp from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
     fetchFarmNews(),
     fetchSunriseSunset(),
     fetchRadar(),
+    fetchSoilTemp(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -105,6 +110,15 @@ export default async function Home() {
         error={radarData.error}
       />
       {/* END FEATURE: Radar */}
+      {/* FEATURE: SoilTemp — delete this block to remove */}
+      <SoilTempCard
+        surfaceF={soilTempData.surfaceF}
+        sixInchF={soilTempData.sixInchF}
+        eighteenInchF={soilTempData.eighteenInchF}
+        fourFootF={soilTempData.fourFootF}
+        error={soilTempData.error}
+      />
+      {/* END FEATURE: SoilTemp */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
