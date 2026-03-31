@@ -34,6 +34,12 @@ import { fetchBarometer } from "@/lib/barometer";
 // FEATURE: SprayDayPlanner — delete this import + render block to remove
 import SprayDayPlannerCard from "@/components/SprayDayPlannerCard";
 import { fetchSprayDayPlanner } from "@/lib/spray-day-planner";
+// FEATURE: DryingConditions — delete this import + render block to remove
+import DryingCard from "@/components/DryingCard";
+import { fetchDryingConditions } from "@/lib/drying-conditions";
+// FEATURE: RainTimeline — delete this import + render block to remove
+import RainTimelineCard from "@/components/RainTimelineCard";
+import { fetchRainTimeline } from "@/lib/rain-timeline";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -90,7 +96,9 @@ export default async function Home() {
   // FEATURE: FrostAlert — delete this fetchFrostAlert from Promise.all to remove
   // FEATURE: Barometer — delete this fetchBarometer from Promise.all to remove
   // FEATURE: SprayDayPlanner — delete this fetchSprayDayPlanner from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData, frostData, barometerData, sprayPlannerData] = await Promise.all([
+  // FEATURE: DryingConditions — delete this fetchDryingConditions from Promise.all to remove
+  // FEATURE: RainTimeline — delete this fetchRainTimeline from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData, gddData, frostData, barometerData, sprayPlannerData, dryingData, rainTimelineData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
@@ -99,10 +107,12 @@ export default async function Home() {
     fetchRadar(),
     fetchSoilTemp(),
     fetchDewPoint(),
-    fetchGDD(),
-    fetchFrostAlert(),
-    fetchBarometer(),
+fetchGDD(),
+ fetchFrostAlert(),
+ fetchBarometer(),
     fetchSprayDayPlanner(),
+ fetchDryingConditions(),
+ fetchRainTimeline(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -189,6 +199,29 @@ export default async function Home() {
         error={sprayPlannerData.error}
       />
       {/* END FEATURE: SprayDayPlanner */}
+      {/* FEATURE: DryingConditions — delete this block to remove */}
+      <DryingCard
+        tempF={dryingData.tempF}
+        humidity={dryingData.humidity}
+        windMph={dryingData.windMph}
+        gustMph={dryingData.gustMph}
+        rating={dryingData.rating}
+        reason={dryingData.reason}
+        tempRating={dryingData.tempRating}
+        humidityRating={dryingData.humidityRating}
+        windRating={dryingData.windRating}
+        error={dryingData.error}
+      />
+      {/* END FEATURE: DryingConditions */}
+      {/* FEATURE: RainTimeline — delete this block to remove */}
+      <RainTimelineCard
+        hours={rainTimelineData.hours}
+        totalPrecipIn={rainTimelineData.totalPrecipIn}
+        dryStreak={rainTimelineData.dryStreak}
+        rainSoon={rainTimelineData.rainSoon}
+        error={rainTimelineData.error}
+      />
+      {/* END FEATURE: RainTimeline */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
