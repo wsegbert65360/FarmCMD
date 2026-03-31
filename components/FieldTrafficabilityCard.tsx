@@ -1,50 +1,41 @@
 interface FieldTrafficabilityCardProps {
-  days: {
-    label: string;
-    date: string;
-    rainIn: number;
-    rating: string;
-    reason: string;
-    isPast: boolean;
-  }[];
-  currentStatus: string;
-  summary: string;
+  rating: "Passable" | "Caution" | "No-Go";
+  reason: string;
   totalRain7d: number;
-  rain48h: number;
+  yesterdayRainIn: number;
   tempF: number | null;
-  isRainingNow: boolean;
+  groundFrozen: boolean;
+  history: {
+    date: string;
+    label: string;
+    precipIn: number;
+  }[];
+  rainExpected: boolean;
   error?: string;
 }
 
-function statusBadge(status: string): { bg: string; text: string } {
-  switch (status) {
+function ratingBadge(rating: string): { bg: string; text: string } {
+  switch (rating) {
     case "Passable": return { bg: "bg-green-500", text: "PASSABLE" };
     case "Caution": return { bg: "bg-amber-400", text: "CAUTION" };
-    default: return { bg: "bg-red-500", text: "NO-GO" };
+    case "No-Go": return { bg: "bg-red-500", text: "NO-GO" };
+    default: return { bg: "bg-slate-400", text: "UNKNOWN" };
   }
 }
 
-function ratingDot(rating: string): string {
-  switch (rating) {
-    case "Passable": return "bg-green-400";
-    case "Caution": return "bg-amber-300";
-    default: return "bg-red-400";
-  }
-}
-
-function dayRowBg(rating: string, isPast: boolean): string {
-  if (isPast) return "opacity-50";
-  switch (rating) {
-    case "Passable": return "bg-green-50";
-    case "Caution": return "bg-amber-50";
-    default: return "bg-red-50";
-  }
+function precipBarWidth(inches: number): string {
+  if (inches === 0) return "";
+  if (inches < 0.1) return "w-[8%]";
+  if (inches < 0.25) return "w-[15%]";
+  if (inches < 0.5) return "w-[30%]";
+  if (inches < 1) return "w-[50%]";
+  return "w-[75%]";
 }
 
 export default function FieldTrafficabilityCard({
-  days, currentStatus, summary, totalRain7d, rain48h, tempF, isRainingNow, error
+  rating, reason, totalRain7d, yesterdayRainIn, tempF, groundFrozen, history, rainExpected, error
 }: FieldTrafficabilityCardProps) {
-  if (error && days.length === 0) {
+  if (error && history.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
         <h2 className="text-base font-semibold text-slate-900 mb-2">Field Trafficability</h2>
@@ -53,7 +44,7 @@ export default function FieldTrafficabilityCard({
     );
   }
 
-  const badge = statusBadge(currentStatus);
+  const badge = ratingBadge(rating);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
@@ -64,59 +55,54 @@ export default function FieldTrafficabilityCard({
         </span>
       </div>
 
-      {/* Summary */}
-      <p className="text-xs text-slate-600 mb-2">{summary}</p>
+      {/* Reason */}
+      <p className="text-xs text-slate-600 mb-2">{reason}</p>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-1 mb-2">
-        <div className="bg-slate-50 rounded-lg px-2 py-1.5 text-center">
-          <p className="text-[9px] text-slate-400 font-medium">48HR RAIN</p>
-          <p className="text-sm font-bold text-blue-600">{rain48h}"</p>
+      <div className="flex items-center justify-between px-2 py-1.5 bg-slate-50 rounded-lg mb-2 text-xs">
+        <div className="text-center">
+          <div className="text-slate-400 text-[10px]">7-Day Rain</div>
+          <div className="font-bold text-blue-600">{totalRain7d}"</div>
         </div>
-        <div className="bg-slate-50 rounded-lg px-2 py-1.5 text-center">
-          <p className="text-[9px] text-slate-400 font-medium">7-DAY TOTAL</p>
-          <p className="text-sm font-bold text-blue-600">{totalRain7d}"</p>
+        <div className="w-px h-6 bg-slate-200" />
+        <div className="text-center">
+          <div className="text-slate-400 text-[10px]">Yesterday</div>
+          <div className="font-bold text-blue-600">{yesterdayRainIn}"</div>
         </div>
-        <div className="bg-slate-50 rounded-lg px-2 py-1.5 text-center">
-          <p className="text-[9px] text-slate-400 font-medium">TEMP</p>
-          <p className="text-sm font-bold text-slate-700">{tempF !== null ? `${tempF}°` : "--"}</p>
+        <div className="w-px h-6 bg-slate-200" />
+        <div className="text-center">
+          <div className="text-slate-400 text-[10px]">Temp</div>
+          <div className="font-bold text-slate-700">{tempF !== null ? `${tempF}°` : "--"}</div>
+        </div>
+        <div className="w-px h-6 bg-slate-200" />
+        <div className="text-center">
+          <div className="text-slate-400 text-[10px]">Ground</div>
+          <div className="font-bold text-slate-700">{groundFrozen ? "🥶" : "💧"}</div>
         </div>
       </div>
 
-      {/* Day-by-day table */}
-      <div className="space-y-[2px]">
-        {days.slice(-7).map((day) => (
-          <div
-            key={day.date}
-            className={`flex items-center gap-2 px-2 py-1 rounded-md text-xs ${dayRowBg(day.rating, day.isPast)}`}
-          >
-            {/* Status dot */}
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ratingDot(day.rating)}`} />
-            {/* Day label */}
-            <span className={`w-10 font-medium text-slate-700 ${day.isPast ? "line-through" : ""}`}>
-              {day.label}
-            </span>
-            {/* Rain amount */}
-            <span className="w-10 text-slate-500">
-              {day.rainIn > 0 ? `${day.rainIn}"` : "Dry"}
-            </span>
-            {/* Rating badge */}
-            <span className={`flex-1 text-right font-medium ${
-              day.rating === "Passable" ? "text-green-700" :
-              day.rating === "Caution" ? "text-amber-700" : "text-red-600"
-            }`}>
-              {day.rating}
-            </span>
+      {/* 7-day rain history bars */}
+      <div className="space-y-0.5 mb-1">
+        {history.slice(0, 7).map((d) => (
+          <div key={d.date} className="flex items-center gap-2 text-[10px]">
+            <span className="w-14 text-right text-slate-400 font-medium">{d.label}</span>
+            <div className="flex-1 bg-slate-100 rounded-full h-2 relative overflow-hidden">
+              {d.precipIn > 0 && (
+                <div
+                  className={`absolute left-0 top-0 h-full rounded-full ${d.precipIn > 0.5 ? "bg-blue-400" : "bg-blue-300"} ${precipBarWidth(d.precipIn)}`}
+                />
+              )}
+            </div>
+            <span className="w-10 text-slate-500 font-medium">{d.precipIn > 0 ? `${d.precipIn}"` : "—"}</span>
           </div>
         ))}
       </div>
 
-      {/* Raining now indicator */}
-      {isRainingNow && (
-        <div className="mt-2 flex items-center justify-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
-          <span className="text-sm">🌧️</span>
-          <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">Currently Raining</span>
-        </div>
+      {/* Rain expected warning */}
+      {rainExpected && (
+        <p className="text-[10px] text-amber-600 text-center font-medium pt-1">
+          ⚠️ More rain expected — conditions may worsen
+        </p>
       )}
     </div>
   );
