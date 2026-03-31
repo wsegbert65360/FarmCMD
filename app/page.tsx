@@ -19,6 +19,9 @@ import { fetchRadar } from "@/lib/radar";
 // FEATURE: SoilTemp — delete this import + render block to remove
 import SoilTempCard from "@/components/SoilTempCard";
 import { fetchSoilTemp } from "@/lib/soil-temp";
+// FEATURE: DewPoint — delete this import + render block to remove
+import DewPointCard from "@/components/DewPointCard";
+import { fetchDewPoint } from "@/lib/dew-point";
 import { config } from "@/lib/config";
 
 export const revalidate = 900;
@@ -70,7 +73,8 @@ export default async function Home() {
   // FEATURE: SunriseSunset — delete this fetchSunriseSunset from Promise.all to remove
   // FEATURE: Radar — delete this fetchRadar from Promise.all to remove
   // FEATURE: SoilTemp — delete this fetchSoilTemp from Promise.all to remove
-  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData] = await Promise.all([
+  // FEATURE: DewPoint — delete this fetchDewPoint from Promise.all to remove
+  const [weather, grainData, forecast, newsData, sunriseSunsetData, radarData, soilTempData, dewPointData] = await Promise.all([
     fetchCurrentWeather(),
     fetchGrainPrices(),
     fetchDailyForecast(10),
@@ -78,6 +82,7 @@ export default async function Home() {
     fetchSunriseSunset(),
     fetchRadar(),
     fetchSoilTemp(),
+    fetchDewPoint(),
   ]);
 
   const [weatherData, sprayData] = await Promise.all([
@@ -119,6 +124,15 @@ export default async function Home() {
         error={soilTempData.error}
       />
       {/* END FEATURE: SoilTemp */}
+      {/* FEATURE: DewPoint — delete this block to remove */}
+      <DewPointCard
+        dewPointF={dewPointData.dewPointF}
+        humidityPct={dewPointData.humidityPct}
+        tempF={dewPointData.tempF}
+        advisory={dewPointData.advisory}
+        error={dewPointData.error}
+      />
+      {/* END FEATURE: DewPoint */}
       <ForecastCard days={forecast.days} updatedAt={new Date().toISOString()} />
       <NewsCard data={newsData} />
       {hasAnyError && (
