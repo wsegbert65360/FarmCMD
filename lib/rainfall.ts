@@ -1,5 +1,4 @@
 import { config } from "./config";
-import { parseNumeric } from "./validation";
 
 export async function fetchRainfall(): Promise<{
   rain1d: number | null;
@@ -7,64 +6,46 @@ export async function fetchRainfall(): Promise<{
   rain7d: number | null;
   error?: string;
 }> {
-  const { apiUrl, fieldId } = config.rainfall;
-  const { timezone } = config.weather;
+  const { apiUrl } = config.rainfall;
+  const { lat, lon } = config.weather;
 
-  if (!fieldId) {
-    // Rainfall field tracking is optional — return nulls without an error
-    return {
-      rain1d: null,
-      rain3d: null,
-      rain7d: null,
-    };
+  if (!lat || !lon) {
+    return { rain1d: null, rain3d: null, rain7d: null };
   }
 
-  const baseUrl = apiUrl.replace(/\/+$/, "");
-
-  // Helper to format date in YYYY-MM-DD for the target timezone
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
-  };
-
-  const today = new Date();
-  const dateStr = formatDate(today);
-
-  // Helper to get past date
-  const getPastDateStr = (daysBack: number) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - daysBack);
-    return formatDate(d);
-  };
-
-  const fetchRange = async (start: string, end?: string): Promise<number | null> => {
-    const url = end 
-      ? `${baseUrl}/rain?field_id=${fieldId}&start_date=${start}&end_date=${end}`
-      : `${baseUrl}/rain?field_id=${fieldId}&date=${start}`;
-
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return parseNumeric(data.rainfall);
-    } catch (e) {
-      console.error(`Error fetching rainfall for ${start}${end ? "-" + end : ""}:`, e);
-      return null;
-    }
-  };
+  const baseUrl = apiUrl.replace(/\/+$/, "").replace(/[\r\n]/g, "");
 
   try {
-    const [rain1d, rain3d, rain7d] = await Promise.all([
-      fetchRange(dateStr),
-      fetchRange(getPastDateStr(2), dateStr),
-      fetchRange(getPastDateStr(6), dateStr),
-    ]);
+    // Single API call: GET /rain?lat=X&lon=Y&days=7
+    // Returns { rainfall, breakdown: { "YYYY-MM-DD": inches }, ... }
+    const response = await fetch(
+      `${baseUrl}/rain?lat=${lat}&lon=${lon}&days=7`,
+      { signal: AbortSignal.timeout(10000) }
+    );
 
-    return { rain1d, rain3d, rain7d };
+    if (!response.ok) {
+      console.error(`Rain API error: ${response.status}`);
+      return { rain1d: null, rain3d: null, rain7d: null, error: "Rainfall service error" };
+    }
+
+    const data = await response.json();
+    const breakdown: Record<string, number> = data.breakdown || {};
+    const dates = Object.keys(breakdown).sort();
+
+    if (dates.length === 0) {
+      return { rain1d: 0, rain3d: 0, rain7d: 0 };
+    }
+
+    // Aggregate from daily breakdown (per API contract)
+    const rain1d = dates.slice(-1).reduce((s, d) => s + (Number(breakdown[d]) || 0), 0);
+    const rain3d = dates.slice(-3).reduce((s, d) => s + (Number(breakdown[d]) || 0), 0);
+    const rain7d = Number(data.rainfall) || dates.reduce((s, d) => s + (Number(breakdown[d]) || 0), 0);
+
+    return {
+      rain1d: Math.round(rain1d * 1000) / 1000,
+      rain3d: Math.round(rain3d * 1000) / 1000,
+      rain7d: Math.round(rain7d * 1000) / 1000,
+    };
   } catch (error) {
     console.error("Rainfall integration error:", error);
     return {
