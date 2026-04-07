@@ -51,8 +51,9 @@ Daily farm snapshot with grain prices, weather/rainfall, and spray decisions.
 | `RAIN_FORECAST_HOURS` | Hours to check rain forecast | 3 |
 | `GRAIN_PRICE_DROP_THRESHOLD` | Price drop threshold for SELL recommendation | -0.03 |
 | `COMMODITIES_API_KEY` | API key for Commodities-API.com | (required for grain prices) |
-| `RAINFALL_API_URL` | URL for rainfall API | https://rain-api.vercel.app |
-| `FIELD_ID` | Field ID for rainfall API | (required for rainfall data) |
+| `RAINFALL_API_URL` | Base URL for rainfall API | https://rain-api.vercel.app |
+| `WEATHER_LAT` / `WEATHER_LON` | Coordinates used for rainfall API coordinate mode | 38.4626783 / -93.5373719 |
+| `FIELD_ID` | Legacy / unused by current rainfall integration | (not required by current code path) |
 
 ## Deployment to Vercel
 
@@ -66,7 +67,8 @@ Daily farm snapshot with grain prices, weather/rainfall, and spray decisions.
 
 3. Add environment variables in Vercel dashboard:
    - Copy `.env.example` values
-   - Add `COMMODITIES_API_KEY` and `FIELD_ID`
+   - Add `COMMODITIES_API_KEY`
+   - Ensure `WEATHER_LAT`, `WEATHER_LON`, and optionally `RAINFALL_API_URL` are set correctly
    - Add `NEXT_PUBLIC_API_URL` = your-production-url
 
 ## API Endpoints
@@ -80,5 +82,5 @@ Daily farm snapshot with grain prices, weather/rainfall, and spray decisions.
 | Service | API | API Key Required? |
 |---------|-----|------------------|
 | Weather | Open-Meteo (api.open-meteo.com) | No |
-| Rainfall | rain-api.vercel.app | Requires `FIELD_ID` |
+| Rainfall | rain-api.vercel.app | Uses coordinate mode (`lat`/`lon`), no `FIELD_ID` required by current code |
 | Grain | Commodities-API.com | Yes (`COMMODITIES_API_KEY`) |

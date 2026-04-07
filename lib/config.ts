@@ -37,6 +37,7 @@ export const config = {
   },
   rainfall: {
     apiUrl: process.env.RAINFALL_API_URL || "https://rain-api.vercel.app",
+    // Legacy only: current rainfall integration uses coordinate mode via WEATHER_LAT/WEATHER_LON.
     fieldId: process.env.FIELD_ID || "",
   },
 };
