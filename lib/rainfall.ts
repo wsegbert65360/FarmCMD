@@ -51,7 +51,9 @@ export async function fetchRainfall(): Promise<{
     const historicalDates = dates.filter((d) => d <= todayYMD);
 
     // Aggregate from historical dates
-    const rain1d = breakdown[todayYMD] ? Number(breakdown[todayYMD]) : 0;
+    const rain1d = historicalDates.length > 0
+      ? Number(breakdown[historicalDates[historicalDates.length - 1]]) || 0
+      : 0;
     const rain3d = historicalDates.slice(-3).reduce((s, d) => s + (Number(breakdown[d]) || 0), 0);
     const rain7d = historicalDates.reduce((s, d) => s + (Number(breakdown[d]) || 0), 0);
 
